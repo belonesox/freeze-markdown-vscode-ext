@@ -124,6 +124,23 @@ async function generateFullHtml(context: vscode.ExtensionContext, renderOutput: 
     const bodyContent = $rendered.html(); 
     const scripts = $rendered('script').toArray().map(el => load(el).html()).join('\n');
     
+    // --- START: Find and add contributed scripts (for mermaid, etc.) ---
+    let contributedScriptTags = '';
+    // The output of `markdown.api.render` can be inconsistent across platforms (e.g., VS Code vs code-server),
+    // sometimes omitting scripts from extensions. We manually collect all `markdown.previewScripts`
+    // to ensure extensions like Mermaid work correctly. This might result in harmless duplicate script
+    // tags on some platforms, but it guarantees functionality.
+    for (const extension of vscode.extensions.all) {
+        const contributes = extension.packageJSON?.contributes;
+        if (contributes && contributes['markdown.previewScripts'] && Array.isArray(contributes['markdown.previewScripts'])) {
+            for (const relativeScriptPath of contributes['markdown.previewScripts']) {
+                const scriptUri = vscode.Uri.joinPath(extension.extensionUri, relativeScriptPath);
+                contributedScriptTags += `<script src="${scriptUri.toString()}"></script>\n`;
+            }
+        }
+    }
+    // --- END: Find and add contributed scripts ---
+
     // --- START: Improved Title Logic with Debugging ---
     let title = '';
     let titleDebugInfo = '<!-- Title Debug Info: ';
@@ -175,7 +192,7 @@ async function generateFullHtml(context: vscode.ExtensionContext, renderOutput: 
     }
 
     templateHtml = templateHtml.replace('<!-- DEFAULT_STYLES_PLACEHOLDER -->', defaultStyles);
-    templateHtml = templateHtml.replace('<!-- USER_STYLES_PLACEHOLDER -->', userStyleLinks + scripts);
+    templateHtml = templateHtml.replace('<!-- USER_STYLES_PLACEHOLDER -->', userStyleLinks + scripts + contributedScriptTags);
     templateHtml = templateHtml.replace('<!-- BODY_CLASS -->', bodyClass);
     templateHtml = templateHtml.replace('<!-- STYLE_VARIABLES -->', styleVariables);
     
@@ -260,7 +277,10 @@ async function embedResources(html: string, sourceUri: vscode.Uri, embedWeb: boo
     $('script[src]').each((_i, el) => {
         const script = $(el);
         const src = script.attr('src');
-        if (src && (src.startsWith('http:') || src.startsWith('https:')) && embedWeb) {
+        if (!src) { return; }
+
+        const isWebResource = src.startsWith('http:') || src.startsWith('https:');
+        if ((isWebResource && embedWeb) || !isWebResource) {
             promises.push(resolveAndEmbedScript(src, script));
         }
     });
@@ -271,10 +291,18 @@ async function embedResources(html: string, sourceUri: vscode.Uri, embedWeb: boo
 
 async function resolveAndEmbedScript(src: string, scriptElement: Cheerio<Element>) {
     try {
-        const response = await fetch(src);
-        if (!response.ok) throw new Error(`Failed to fetch script: ${response.statusText}`);
-        const scriptContent = await response.text();
+        let scriptContent: string;
+        if (src.startsWith('http')) {
+            const response = await fetch(src);
+            if (!response.ok) throw new Error(`Failed to fetch script: ${response.statusText}`);
+            scriptContent = await response.text();
+        } else {
+            const fileUri = vscode.Uri.parse(src, true);
+            const contentBuffer = await vscode.workspace.fs.readFile(fileUri);
+            scriptContent = contentBuffer.toString();
+        }
         scriptElement.removeAttr('src').text(scriptContent);
+        scriptElement.attr('data-embedded-from', src);
     } catch (e) {
         console.error(`Failed to embed script: ${src}`, e);
         scriptElement.remove();
