@@ -1,0 +1,105 @@
+{
+  "name": "freeze-markdown",
+  "displayName": "Freeze Markdown",
+  "icon": "media/icon.png",
+  "description": "Saves a Markdown Preview as a single, self-contained HTML file.",
+  "version": "0.0.7",
+  "license": "MIT",
+  "author": "belonesox",
+  "publisher": "belonesox",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/placeholder/freeze-markdown.git"
+  },
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "main": "./dist/extension.js",
+  "activationEvents": [
+    "onCommand:freeze-markdown.exportToHtml",
+    "onCommand:freeze-markdown.exportToHtmlWithDialog",
+    "onCommand:freeze-markdown.updateThemeStyles",
+    "onLanguage:markdown"
+  ],
+  "contributes": {
+    "commands": [
+      {
+        "command": "freeze-markdown.exportToHtml",
+        "title": "Export Markdown to Self-Contained HTML"
+      },
+      {
+        "command": "freeze-markdown.exportToHtmlWithDialog",
+        "title": "Export Markdown to HTML (Show Save Dialog)"
+      },
+      {
+        "command": "freeze-markdown.updateThemeStyles",
+        "title": "Update Markdown Preview Theme Styles"
+      }
+    ],
+    "configuration": {
+      "title": "Freeze Markdown",
+      "properties": {
+        "freeze-markdown.autoSaveOnSave": {
+          "type": "boolean",
+          "default": false,
+          "description": "Automatically save a frozen HTML file every time a Markdown file is saved."
+        },
+        "freeze-markdown.outputSuffix": {
+          "type": "string",
+          "default": ".html",
+          "description": "The file suffix to use for exported HTML files (e.g., '.html' or '.frozen.html')."
+        },
+        "freeze-markdown.embedWebResourcesOnManualExport": {
+          "type": "boolean",
+          "default": true,
+          "description": "Embed External Resources on Manual Export"
+        },
+        "freeze-markdown.embedWebResourcesOnAutoSave": {
+          "type": "boolean",
+          "default": false,
+          "description": "Embed External Resources on Auto Save"
+        },
+        "freeze-markdown.templatePath": {
+          "type": "string",
+          "default": null,
+          "description": "Optional. Path to a custom HTML template file to use for exporting. If null, a default template is used."
+        },
+        "freeze-markdown.createDebugFile": {
+          "type": "boolean",
+          "default": false,
+          "description": "Creates an additional `.debug.html` file before embedding resources. Useful for debugging style issues."
+        }
+      }
+    }
+  },
+  "files": [
+    "dist",
+    "LICENSE",
+    "media/icon.png",
+    "media/template.html",
+    "media/default-styles.json"
+  ],
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "node ./esbuild.js",
+    "watch": "node ./esbuild.js --watch"
+  },
+  "devDependencies": {
+    "@types/mocha": "^10.0.6",
+    "@types/node": "20.x",
+    "@types/node-fetch": "^2.6.11",
+    "@types/vscode": "1.85.0",
+    "@typescript-eslint/eslint-plugin": "^7.11.0",
+    "@typescript-eslint/parser": "^7.11.0",
+    "esbuild": "^0.20.0",
+    "eslint": "^8.57.0",
+    "typescript": "^5.4.5"
+  },
+  "dependencies": {
+    "cheerio": "^1.0.0-rc.12",
+    "node-fetch": "^2.7.0"
+  }
+}

@@ -1,0 +1,11 @@
+out
+dist
+node_modules
+.vscode-test/
+*.vsix
+*.log
+*.htm
+*.md.debug.html
+gold.html
+chats.md
+.aider*

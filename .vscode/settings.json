@@ -1,0 +1,32 @@
+// Place your settings in this file to overwrite default and user settings.
+{
+    "files.exclude": {
+        "out": false, // set this to true to hide the "out" folder with the compiled JS files
+        "dist": false // set this to true to hide the "dist" folder with the compiled JS files
+    },
+    "search.exclude": {
+        "out": true, // set this to false to include "out" folder in search results
+        "dist": true // set this to false to include "dist" folder in search results
+    },
+    "typescript.tsdk": "node_modules/typescript/lib",
+    "workbench.colorCustomizations": {
+        "activityBar.activeBackground": "#9aeee6",
+        "activityBar.background": "#9aeee6",
+        "activityBar.foreground": "#15202b",
+        "activityBar.inactiveForeground": "#15202b99",
+        "activityBarBadge.background": "#d65be3",
+        "activityBarBadge.foreground": "#15202b",
+        "commandCenter.border": "#15202b99",
+        "sash.hoverBorder": "#9aeee6",
+        "statusBar.background": "#6ee7db",
+        "statusBar.foreground": "#15202b",
+        "statusBarItem.hoverBackground": "#42e0d0",
+        "statusBarItem.remoteBackground": "#6ee7db",
+        "statusBarItem.remoteForeground": "#15202b",
+        "titleBar.activeBackground": "#6ee7db",
+        "titleBar.activeForeground": "#15202b",
+        "titleBar.inactiveBackground": "#6ee7db99",
+        "titleBar.inactiveForeground": "#15202b99"
+    },
+    "peacock.color": "#6ee7db",
+}
