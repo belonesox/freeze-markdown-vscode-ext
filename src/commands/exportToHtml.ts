@@ -124,7 +124,6 @@ async function generateFullHtml(context: vscode.ExtensionContext, renderOutput: 
     const bodyContent = $rendered.html(); 
     const scripts = $rendered('script').toArray().map(el => load(el).html()).join('\n');
     
-    // --- START: Find and add contributed scripts (for mermaid, etc.) ---
     let contributedScriptTags = '';
     // The output of `markdown.api.render` can be inconsistent across platforms (e.g., VS Code vs code-server),
     // sometimes omitting scripts from extensions. We manually collect all `markdown.previewScripts`
@@ -139,9 +138,7 @@ async function generateFullHtml(context: vscode.ExtensionContext, renderOutput: 
             }
         }
     }
-    // --- END: Find and add contributed scripts ---
 
-    // --- START: Improved Title Logic with Debugging ---
     let title = '';
     let titleDebugInfo = '<!-- Title Debug Info: ';
 
