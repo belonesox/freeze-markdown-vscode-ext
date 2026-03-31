@@ -3,7 +3,7 @@
   "displayName": "Freeze Markdown",
   "icon": "media/icon.png",
   "description": "Saves a Markdown Preview as a single, self-contained HTML file.",
-  "version": "0.0.8",
+  "version": "0.1.1",
   "license": "MIT",
   "author": "belonesox",
   "publisher": "belonesox",
@@ -61,6 +61,16 @@
           "type": "boolean",
           "default": false,
           "description": "Embed External Resources on Auto Save"
+        },
+        "freeze-markdown.embedLocalResourcesOnManualExport": {
+          "type": "boolean",
+          "default": true,
+          "description": "Embed local resources (CSS/JS/images) directly into the HTML on manual export. If false, resources are cached in '.vscode/.cache' and linked relatively."
+        },
+        "freeze-markdown.embedLocalResourcesOnAutoSave": {
+          "type": "boolean",
+          "default": true,
+          "description": "Embed local resources directly into the HTML on auto save. If false, resources are cached and linked relatively."
         },
         "freeze-markdown.templatePath": {
           "type": "string",

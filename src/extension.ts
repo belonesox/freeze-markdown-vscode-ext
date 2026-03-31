@@ -12,7 +12,8 @@ export function activate(context: vscode.ExtensionContext) {
             await renderAndSave(context, editor.document, {
                 showDialog: false,
                 showNotifications: true,
-                embedWebResources: config.get('embedWebResourcesOnManualExport', true)
+                embedWebResources: config.get('embedWebResourcesOnManualExport', true),
+                embedLocalResources: config.get('embedLocalResourcesOnManualExport', true)
             });
         } else {
             vscode.window.showWarningMessage('Please open a Markdown file to export.');
@@ -26,7 +27,8 @@ export function activate(context: vscode.ExtensionContext) {
             await renderAndSave(context, editor.document, {
                 showDialog: true,
                 showNotifications: true,
-                embedWebResources: config.get('embedWebResourcesOnManualExport', true)
+                embedWebResources: config.get('embedWebResourcesOnManualExport', true),
+                embedLocalResources: config.get('embedLocalResourcesOnManualExport', true)
             });
         } else {
             vscode.window.showWarningMessage('Please open a Markdown file to export.');
@@ -39,7 +41,8 @@ export function activate(context: vscode.ExtensionContext) {
             await renderAndSave(context, document, {
                 showDialog: false,
                 showNotifications: false,
-                embedWebResources: config.get('embedWebResourcesOnAutoSave', false)
+                embedWebResources: config.get('embedWebResourcesOnAutoSave', false),
+                embedLocalResources: config.get('embedLocalResourcesOnAutoSave', true)
             });
         }
     });
@@ -50,6 +53,5 @@ export function activate(context: vscode.ExtensionContext) {
 
     context.subscriptions.push(exportCommand, exportWithDialogCommand, saveListener, updateStylesCommand);
 }
-
 
 export function deactivate() {}

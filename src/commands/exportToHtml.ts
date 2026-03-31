@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
+import * as crypto from 'crypto';
 import { load, type Cheerio } from 'cheerio';
 import type { Element } from 'domhandler';
 import fetch from 'node-fetch';
@@ -8,6 +9,7 @@ export interface SaveOptions {
     showDialog: boolean;
     showNotifications: boolean;
     embedWebResources: boolean;
+    embedLocalResources: boolean;
 }
 
 export async function renderAndSave(context: vscode.ExtensionContext, document: vscode.TextDocument, options: SaveOptions) {
@@ -28,7 +30,6 @@ export async function renderAndSave(context: vscode.ExtensionContext, document: 
             progress?.report({ increment: 30, message: "Constructing full HTML..." });
             const fullHtml = await generateFullHtml(context, renderOutput, document.uri);
 
-            // *** THE FIX IS HERE ***
             // Check the new setting OR if we are in development mode.
             const createDebugFile = config.get('createDebugFile', false);
             if (context.extensionMode === vscode.ExtensionMode.Development || createDebugFile) {
@@ -36,8 +37,8 @@ export async function renderAndSave(context: vscode.ExtensionContext, document: 
                 await vscode.workspace.fs.writeFile(debugSavePath, Buffer.from(fullHtml, 'utf8'));
             }
 
-            progress?.report({ increment: 30, message: "Embedding local resources..." });
-            const selfContainedHtml = await embedResources(fullHtml, document.uri, options.embedWebResources);
+            progress?.report({ increment: 30, message: "Embedding/Linking resources..." });
+            const finalHtml = await embedResources(fullHtml, document.uri, options.embedWebResources, options.embedLocalResources);
             
             const outputSuffix = config.get('outputSuffix', '.html');
             const finalSavePath = document.uri.fsPath.replace(/\.md$/, '') + outputSuffix;
@@ -54,7 +55,7 @@ export async function renderAndSave(context: vscode.ExtensionContext, document: 
             }
 
             if (saveUri) {
-                await vscode.workspace.fs.writeFile(saveUri, Buffer.from(selfContainedHtml, 'utf8'));
+                await vscode.workspace.fs.writeFile(saveUri, Buffer.from(finalHtml, 'utf8'));
                 if (options.showNotifications) {
                     vscode.window.showInformationMessage(`MD Successfully exported to: ${saveUri.fsPath}`);
                 }
@@ -75,8 +76,6 @@ export async function renderAndSave(context: vscode.ExtensionContext, document: 
     }
 }
 
-
-// --- All other helper functions below are unchanged ---
 
 async function getTemplate(context: vscode.ExtensionContext, documentUri: vscode.Uri): Promise<string> {
     const workspaceFolder = vscode.workspace.getWorkspaceFolder(documentUri);
@@ -124,6 +123,7 @@ async function generateFullHtml(context: vscode.ExtensionContext, renderOutput: 
     const bodyContent = $rendered.html(); 
     const scripts = $rendered('script').toArray().map(el => load(el).html()).join('\n');
     
+    // --- START: Find and add contributed scripts (for mermaid, etc.) ---
     let contributedScriptTags = '';
     // The output of `markdown.api.render` can be inconsistent across platforms (e.g., VS Code vs code-server),
     // sometimes omitting scripts from extensions. We manually collect all `markdown.previewScripts`
@@ -138,7 +138,22 @@ async function generateFullHtml(context: vscode.ExtensionContext, renderOutput: 
             }
         }
     }
+    // --- END: Find and add contributed scripts ---
 
+    // --- START: Find and add contributed styles (for KaTeX, etc.) ---
+    let contributedStyleLinks = '';
+    for (const extension of vscode.extensions.all) {
+        const contributes = extension.packageJSON?.contributes;
+        if (contributes && contributes['markdown.previewStyles'] && Array.isArray(contributes['markdown.previewStyles'])) {
+            for (const relativeStylePath of contributes['markdown.previewStyles']) {
+                const styleUri = vscode.Uri.joinPath(extension.extensionUri, relativeStylePath);
+                contributedStyleLinks += `<link rel="stylesheet" href="${styleUri.toString()}" type="text/css" media="screen">\n`;
+            }
+        }
+    }
+    // --- END: Find and add contributed styles ---
+
+    // --- START: Improved Title Logic with Debugging ---
     let title = '';
     let titleDebugInfo = '<!-- Title Debug Info: ';
 
@@ -189,7 +204,7 @@ async function generateFullHtml(context: vscode.ExtensionContext, renderOutput: 
     }
 
     templateHtml = templateHtml.replace('<!-- DEFAULT_STYLES_PLACEHOLDER -->', defaultStyles);
-    templateHtml = templateHtml.replace('<!-- USER_STYLES_PLACEHOLDER -->', userStyleLinks + scripts + contributedScriptTags);
+    templateHtml = templateHtml.replace('<!-- USER_STYLES_PLACEHOLDER -->', contributedStyleLinks + userStyleLinks + scripts + contributedScriptTags);
     templateHtml = templateHtml.replace('<!-- BODY_CLASS -->', bodyClass);
     templateHtml = templateHtml.replace('<!-- STYLE_VARIABLES -->', styleVariables);
     
@@ -198,7 +213,6 @@ async function generateFullHtml(context: vscode.ExtensionContext, renderOutput: 
 
 async function getDefaultStylesFromConfig(context: vscode.ExtensionContext, documentUri: vscode.Uri): Promise<{ styles: string, variables: string }> {
     const workspaceFolder = vscode.workspace.getWorkspaceFolder(documentUri);
-
     let stylesJsonContent: string;
 
     if (workspaceFolder) {
@@ -250,15 +264,53 @@ function getUserStyles(documentUri: vscode.Uri): string {
     return '';
 }
 
-async function embedResources(html: string, sourceUri: vscode.Uri, embedWeb: boolean): Promise<string> {
+// === NEW HELPER: Caching resources ===
+async function cacheFile(sourceUri: vscode.Uri, documentUri: vscode.Uri, contentBuffer: Buffer | Uint8Array) {
+    let cacheDir: vscode.Uri;
+    const wf = vscode.workspace.getWorkspaceFolder(documentUri);
+    if (wf) {
+        cacheDir = vscode.Uri.joinPath(wf.uri, '.vscode', '.cache', 'freeze-markdown');
+    } else {
+        // Fallback if no workspace is opened
+        cacheDir = vscode.Uri.joinPath(vscode.Uri.file(path.dirname(documentUri.fsPath)), '.vscode', '.cache', 'freeze-markdown');
+    }
+
+    await vscode.workspace.fs.createDirectory(cacheDir);
+
+    // Hash path ensures updates to extensions (which change folder paths) invalidate the cache automatically
+    const hash = crypto.createHash('md5').update(sourceUri.fsPath).digest('hex').substring(0, 8);
+    const ext = path.extname(sourceUri.fsPath);
+    const baseName = path.basename(sourceUri.fsPath, ext);
+    const filename = `${baseName}_${hash}${ext}`;
+    const cachedUri = vscode.Uri.joinPath(cacheDir, filename);
+
+    try {
+        await vscode.workspace.fs.stat(cachedUri);
+    } catch {
+        // File doesn't exist in cache, let's write it
+        await vscode.workspace.fs.writeFile(cachedUri, Buffer.from(contentBuffer));
+    }
+
+    const htmlDir = path.dirname(documentUri.fsPath);
+    let relativeToHtml = path.relative(htmlDir, cachedUri.fsPath);
+    relativeToHtml = relativeToHtml.replace(/\\/g, '/'); // Windows backslashes to forward slashes
+    if (!relativeToHtml.startsWith('.') && !relativeToHtml.startsWith('/')) {
+        relativeToHtml = './' + relativeToHtml;
+    }
+
+    return { cachedUri, relativeToHtml, filename };
+}
+// === END HELPER ===
+
+
+async function embedResources(html: string, sourceUri: vscode.Uri, embedWeb: boolean, embedLocal: boolean): Promise<string> {
     const $ = load(html);
     const promises: Promise<void>[] = [];
-    const sourceDir = vscode.Uri.file(path.dirname(sourceUri.fsPath));
 
     $('link[rel="stylesheet"]').each((_i, el) => {
         const link = $(el);
         const href = link.attr('href');
-        if (href) promises.push(resolveAndEmbedCss(href, link));
+        if (href) promises.push(resolveAndEmbedCss(href, link, sourceUri, embedLocal));
     });
 
     $('img').each((_i, el) => {
@@ -266,7 +318,7 @@ async function embedResources(html: string, sourceUri: vscode.Uri, embedWeb: boo
         const src = img.attr('src');
         if (src && !src.startsWith('data:')) {
             if (!src.startsWith('http') || embedWeb) {
-                promises.push(resolveAndEmbedImage(src, img, sourceDir));
+                promises.push(resolveAndEmbedImage(src, img, sourceUri, embedLocal));
             }
         }
     });
@@ -278,7 +330,7 @@ async function embedResources(html: string, sourceUri: vscode.Uri, embedWeb: boo
 
         const isWebResource = src.startsWith('http:') || src.startsWith('https:');
         if ((isWebResource && embedWeb) || !isWebResource) {
-            promises.push(resolveAndEmbedScript(src, script));
+            promises.push(resolveAndEmbedScript(src, script, sourceUri, embedLocal));
         }
     });
 
@@ -286,38 +338,115 @@ async function embedResources(html: string, sourceUri: vscode.Uri, embedWeb: boo
     return $.html();
 }
 
-async function resolveAndEmbedScript(src: string, scriptElement: Cheerio<Element>) {
+async function resolveAndEmbedScript(src: string, scriptElement: Cheerio<Element>, documentUri: vscode.Uri, embedLocal: boolean) {
     try {
-        let scriptContent: string;
         if (src.startsWith('http')) {
             const response = await fetch(src);
             if (!response.ok) throw new Error(`Failed to fetch script: ${response.statusText}`);
-            scriptContent = await response.text();
+            const scriptContent = await response.text();
+            scriptElement.removeAttr('src').text(scriptContent);
+            scriptElement.attr('data-embedded-from', src);
         } else {
-            const fileUri = vscode.Uri.parse(src, true);
+            let fileUri: vscode.Uri;
+            if (src.startsWith('vscode-resource:')) {
+                const tempUri = vscode.Uri.parse(src, true);
+                fileUri = vscode.Uri.file(tempUri.fsPath);
+            } else {
+                fileUri = vscode.Uri.parse(src, true);
+                if (fileUri.scheme !== 'file' && !path.isAbsolute(src)) {
+                    const baseUri = vscode.Uri.file(path.dirname(documentUri.fsPath));
+                    fileUri = vscode.Uri.joinPath(baseUri, src);
+                } else if (fileUri.scheme !== 'file') {
+                    fileUri = vscode.Uri.file(fileUri.fsPath);
+                }
+            }
+
             const contentBuffer = await vscode.workspace.fs.readFile(fileUri);
-            scriptContent = contentBuffer.toString();
+            
+            if (embedLocal) {
+                scriptElement.removeAttr('src').text(contentBuffer.toString());
+                scriptElement.attr('data-embedded-from', src);
+            } else {
+                const { relativeToHtml } = await cacheFile(fileUri, documentUri, contentBuffer);
+                scriptElement.attr('src', relativeToHtml);
+            }
         }
-        scriptElement.removeAttr('src').text(scriptContent);
-        scriptElement.attr('data-embedded-from', src);
     } catch (e) {
-        console.error(`Failed to embed script: ${src}`, e);
-        scriptElement.remove();
+        console.error(`Failed to process script: ${src}`, e);
+        if (embedLocal) {
+            scriptElement.remove(); // Only drop if failing to inline
+        }
     }
 }
 
-async function resolveAndEmbedCss(href: string, linkElement: Cheerio<Element>) {
+async function resolveAndEmbedCss(href: string, linkElement: Cheerio<Element>, documentUri: vscode.Uri, embedLocal: boolean) {
     try {
         let fileUri = vscode.Uri.parse(href, true);
         if (fileUri.scheme === 'vscode-resource') {
             fileUri = vscode.Uri.file(fileUri.fsPath);
+        } else if (!path.isAbsolute(fileUri.fsPath) && fileUri.scheme !== 'file') {
+             fileUri = vscode.Uri.joinPath(vscode.Uri.file(path.dirname(documentUri.fsPath)), href);
         }
-        const content = await vscode.workspace.fs.readFile(fileUri);
-        linkElement.replaceWith(`<style data-embedded-from="${href}">\n${content.toString()}\n</style>`);
-    } catch (e) { console.error(`Failed to embed CSS: ${href}`, e); }
+        
+        const contentBuffer = await vscode.workspace.fs.readFile(fileUri);
+        let cssContent = contentBuffer.toString();
+
+        const cssDirUri = vscode.Uri.file(path.dirname(fileUri.fsPath));
+        const urlRegex = /url\((?!['"]?data:)['"]?([^'"\)]+)['"]?\)/g;
+        const matches = Array.from(cssContent.matchAll(urlRegex));
+
+        const replacements = await Promise.all(matches.map(async (match) => {
+            const originalUrlMatch = match[0];
+            const resourcePath = match[1];
+            try {
+                const cleanResourcePath = resourcePath.split(/[?#]/)[0];
+                const resourceUri = vscode.Uri.joinPath(cssDirUri, cleanResourcePath);
+                
+                const resourceContent = await vscode.workspace.fs.readFile(resourceUri);
+                const ext = path.extname(resourceUri.fsPath).substring(1).toLowerCase();
+                const mimeType = getMimeType(ext);
+
+                if (mimeType === 'application/octet-stream') {
+                    console.warn(`Skipping embedding of unknown MIME type for resource: ${resourcePath}`);
+                    return { originalUrlMatch, dataUri: originalUrlMatch };
+                }
+
+                if (embedLocal) {
+                    const base64 = Buffer.from(resourceContent).toString('base64');
+                    const dataUri = `url('data:${mimeType};base64,${base64}')`;
+                    return { originalUrlMatch, dataUri };
+                } else {
+                    const { filename } = await cacheFile(resourceUri, documentUri, resourceContent);
+                    // Both CSS and Fonts are in `.vscode/.cache/freeze-markdown/`, so link is flat
+                    return { originalUrlMatch, dataUri: `url('./${filename}')` };
+                }
+            } catch (e) {
+                console.error(`Failed to process resource from CSS (${resourcePath}):`, e);
+                return { originalUrlMatch, dataUri: originalUrlMatch }; 
+            }
+        }));
+        
+        const replacementMap = new Map<string, string>();
+        for (const { originalUrlMatch, dataUri } of replacements) {
+            replacementMap.set(originalUrlMatch, dataUri);
+        }
+        for (const [originalUrl, dataUri] of replacementMap.entries()) {
+            const escapedUrl = originalUrl.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            cssContent = cssContent.replace(new RegExp(escapedUrl, 'g'), dataUri);
+        }
+
+        if (embedLocal) {
+            linkElement.replaceWith(`<style data-embedded-from="${href}">\n${cssContent}\n</style>`);
+        } else {
+            const { relativeToHtml } = await cacheFile(fileUri, documentUri, Buffer.from(cssContent, 'utf8'));
+            linkElement.attr('href', relativeToHtml);
+        }
+    } catch (e) { 
+        console.error(`Failed to process CSS: ${href}`, e);
+    }
 }
 
-async function resolveAndEmbedImage(src: string, imgElement: Cheerio<Element>, baseUri: vscode.Uri) {
+async function resolveAndEmbedImage(src: string, imgElement: Cheerio<Element>, documentUri: vscode.Uri, embedLocal: boolean) {
     try {
         let fileUri: vscode.Uri;
         if (src.startsWith('http')) {
@@ -330,6 +459,7 @@ async function resolveAndEmbedImage(src: string, imgElement: Cheerio<Element>, b
             return;
         }
         
+        const baseUri = vscode.Uri.file(path.dirname(documentUri.fsPath));
         if (src.startsWith('vscode-resource:')) {
             const tempUri = vscode.Uri.parse(src, true);
             fileUri = vscode.Uri.file(tempUri.fsPath);
@@ -340,12 +470,18 @@ async function resolveAndEmbedImage(src: string, imgElement: Cheerio<Element>, b
         }
         
         const content = await vscode.workspace.fs.readFile(fileUri);
-        const ext = path.extname(fileUri.fsPath).substring(1).toLowerCase();
-        const mimeType = getMimeType(ext);
-        const base64 = Buffer.from(content).toString('base64');
-        imgElement.attr('src', `data:${mimeType};base64,${base64}`);
+
+        if (embedLocal) {
+            const ext = path.extname(fileUri.fsPath).substring(1).toLowerCase();
+            const mimeType = getMimeType(ext);
+            const base64 = Buffer.from(content).toString('base64');
+            imgElement.attr('src', `data:${mimeType};base64,${base64}`);
+        } else {
+            const { relativeToHtml } = await cacheFile(fileUri, documentUri, content);
+            imgElement.attr('src', relativeToHtml);
+        }
     } catch (e) {
-        console.error(`Failed to embed image: ${src}`, e);
+        console.error(`Failed to process image: ${src}`, e);
     }
 }
 
@@ -353,6 +489,11 @@ function getMimeType(extension: string): string {
     const mimes: { [key: string]: string } = {
         'jpg': 'image/jpeg', 'jpeg': 'image/jpeg', 'png': 'image/png',
         'gif': 'image/gif', 'svg': 'image/svg+xml', 'webp': 'image/webp',
+        'woff': 'font/woff',
+        'woff2': 'font/woff2',
+        'ttf': 'font/ttf',
+        'eot': 'application/vnd.ms-fontobject',
+        'otf': 'font/otf',
     };
     return mimes[extension] || 'application/octet-stream';
 }
