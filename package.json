@@ -3,7 +3,7 @@
   "displayName": "Freeze Markdown",
   "icon": "media/icon.png",
   "description": "Saves a Markdown Preview as a single, self-contained HTML file.",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "license": "MIT",
   "author": "belonesox",
   "publisher": "belonesox",
