@@ -38,6 +38,9 @@ There are many documentation processes out there, but one of the simplest and mo
         - It updates the built-in HTML-preview styles in `.vscode/freeze-markdown-styles.json`.
             - If this file is missing, it creates it automatically during any export.
             - If it exists, the extension uses it, and you can tweak it manually.
+- If generated HTML content somehow available in web to download, the following command will be useful:
+    - «Open Frozen HTML in Browser» / `showInWeb`,
+    - «Copy Frozen HTML Web URL» / `copyWebUrl`
 
 ### Use Cases
 
@@ -49,6 +52,8 @@ There are different HTML generation use cases, and depending on them, you might 
             - Keep images and videos in their respective folder structure.
             - Store internal JS/CSS/Fonts from extensions in a shared cache.
     - Otherwise, every 512-byte Markdown note might generate a 20MB HTML file bloated with scripts and fonts.
+    - In this case, the commands `showInWeb` or `copyWebUrl`  will be useful.
+
 - **Total Freeze (Full Archiving)**
     - If you need to transport the result via USB stick or carrier pigeon to a place with no internet:
         - For example, giving a talk at a conference in the wilderness with an unstable connection — a very real scenario.
@@ -92,3 +97,8 @@ By default, everything is configured reasonably for occasional use: auto-save is
 - `createDebugFile`
     - A technical setting for debugging, disabled by default.
     - Creates an additional `.debug.html` file before embedding resources. Useful for debugging style issues.
+- `webUrlTemplate`
+    - Template for the web URL of the generated HTML.
+        - for commands «Open Frozen HTML in Browser» / «showInWeb» or «Copy Frozen HTML Web URL» / «copyWebUrl»
+        - Supports `${relativeFileDirname}`, `${fileBasenameNoExtension}`, and `${fileBasename}`.
+            - like `https://your.server.com/prefix/${relativeFileDirname}/${fileBasenameNoExtension}.html`
