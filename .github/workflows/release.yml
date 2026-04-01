@@ -26,6 +26,9 @@ jobs:
       - name: Package extension
         run: npx vsce package
 
+      - name: Publish to VS Code Marketplace
+        run: npx vsce publish -p ${{ secrets.VSCE_PAT }}
+
       - name: Create Release and Upload Asset
         uses: softprops/action-gh-release@v2
         with:
