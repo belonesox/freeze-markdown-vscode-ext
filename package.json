@@ -9,7 +9,7 @@
   "publisher": "belonesox",
   "repository": {
     "type": "git",
-    "url": "https://github.com/placeholder/freeze-markdown.git"
+    "url": "https://github.com/belonesox/freeze-markdown-vscode-ext"
   },
   "engines": {
     "vscode": "^1.85.0"
