@@ -1,5 +1,9 @@
 # Change Log
 
+## 0.1.6
+- Added setting `editUrlTemplate`
+    - You may need to recreate/merge `freeze-markdown-template.html` for your existing projects
+
 ## 0.1.5
 - Added commands
     - «Open Frozen HTML in Browser» / `showInWeb`,
@@ -14,4 +18,4 @@
 
 
 ## 0.1.0
-- Proof Of Concept, проверяется сама идея удобства использования.
+- Proof Of Concept, testing the extension for several months.

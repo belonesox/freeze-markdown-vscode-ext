@@ -1,56 +1,35 @@
 <!DOCTYPE html>
-<html lang="en" style="<!-- STYLE_VARIABLES -->">
+<html lang="en" style="{{STYLE_VARIABLES}}">
 
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title><!-- TITLE_PLACEHOLDER --></title>
+  <title>{{TITLE_PLACEHOLDER}}</title>
   <style>
-    /* Responsive centering for the main content */
-    body {
-      margin: 0;
-      padding: 0;
-    }
-
-    .freeze-markdown-container {
-      margin: 0 auto;
-      /* Center the container */
-      padding: 20px;
-    }
-
-    @media (min-width: 1280px) {
-      .freeze-markdown-container {
-        max-width: 1200px;
-        /* Set a max-width on large screens */
-      }
-    }
+    body { margin: 0; padding: 0; }
+    .freeze-markdown-container { margin: 0 auto; padding: 20px; }
+    @media (min-width: 1280px) { .freeze-markdown-container { max-width: 1200px; } }
   </style>
-  <!-- DEFAULT_STYLES_PLACEHOLDER -->
-  <!-- USER_STYLES_PLACEHOLDER -->
+  {{DEFAULT_STYLES_PLACEHOLDER}}
+  {{USER_STYLES_PLACEHOLDER}}
   <style>
     @media (max-width: 1024px) {
-      :root {
-        --doc-font-size: clamp(18px, 3.2vw, 32px);
-      }
-      .freeze-markdown-container {
-        padding: 0px;
-      }
+      :root { --doc-font-size: clamp(18px, 3.2vw, 32px); }
+      .freeze-markdown-container { padding: 0px; }
     }
-
     @media (max-width: 768px) {
-      :root {
-        --doc-font-size: clamp(16px, 5.5vw, 32px) !important;
-      }
+      :root { --doc-font-size: clamp(16px, 5.5vw, 32px) !important; }
     }
   </style>
 </head>
 
-<body class="<!-- BODY_CLASS -->">
+<body class="{{BODY_CLASS}}">
 
   <div class="freeze-markdown-container">
-    <!-- BODY_PLACEHOLDER -->
+    {{BODY_PLACEHOLDER}}
   </div>
 
-</body>
+  {{EDIT_INJECTION_PLACEHOLDER}}
 
+</body>
 </html>

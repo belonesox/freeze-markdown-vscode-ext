@@ -38,9 +38,10 @@ There are many documentation processes out there, but one of the simplest and mo
         - It updates the built-in HTML-preview styles in `.vscode/freeze-markdown-styles.json`.
             - If this file is missing, it creates it automatically during any export.
             - If it exists, the extension uses it, and you can tweak it manually.
-- If generated HTML content somehow available in web to download, the following command will be useful:
-    - «Open Frozen HTML in Browser» / `showInWeb`,
-    - «Copy Frozen HTML Web URL» / `copyWebUrl`
+- «Open Frozen HTML in Browser» / `showInWeb`
+    - Opens the web URL corresponding to the current Markdown file in your default browser (requires `webUrlTemplate` to be configured).
+- «Copy Frozen HTML Web URL» / `copyWebUrl`
+    - Copies the web URL of the generated HTML to your clipboard.
 
 ### Use Cases
 
@@ -50,10 +51,8 @@ There are different HTML generation use cases, and depending on them, you might 
     - In this case, it's better to keep the HTML files as lightweight as possible.
         - Externalize all resources:
             - Keep images and videos in their respective folder structure.
-            - Store internal JS/CSS/Fonts from extensions in a shared cache.
+            - Store internal JS/CSS/Fonts from extensions in a shared `.vscode/.cache` folder.
     - Otherwise, every 512-byte Markdown note might generate a 20MB HTML file bloated with scripts and fonts.
-    - In this case, the commands `showInWeb` or `copyWebUrl`  will be useful.
-
 - **Total Freeze (Full Archiving)**
     - If you need to transport the result via USB stick or carrier pigeon to a place with no internet:
         - For example, giving a talk at a conference in the wilderness with an unstable connection — a very real scenario.
@@ -85,10 +84,11 @@ By default, everything is configured reasonably for occasional use: auto-save is
 - `templatePath` — Path to the generation template.
     - If not specified, and `.vscode/freeze-markdown-template.html` is missing, the extension will generate one. You can edit it later.
         - It contains placeholders with obvious semantics:
-              - `TITLE_PLACEHOLDER`
-              - `DEFAULT_STYLES_PLACEHOLDER`
-              - `USER_STYLES_PLACEHOLDER`
-              - `BODY_PLACEHOLDER`
+              - `{{TITLE_PLACEHOLDER}}`
+              - `{{DEFAULT_STYLES_PLACEHOLDER}}`
+              - `{{USER_STYLES_PLACEHOLDER}}`
+              - `{{BODY_PLACEHOLDER}}`
+              - `{{EDIT_INJECTION_PLACEHOLDER}}`
     - Settings to control what to include/embed during freezing (see [Use Cases](#use-cases)):
         - `embedWebResourcesOnManualExport` — Embed External Resources on Manual Export.
         - `embedWebResourcesOnAutoSave` — Embed External Resources on Auto Save.
@@ -99,6 +99,12 @@ By default, everything is configured reasonably for occasional use: auto-save is
     - Creates an additional `.debug.html` file before embedding resources. Useful for debugging style issues.
 - `webUrlTemplate`
     - Template for the web URL of the generated HTML.
-        - for commands «Open Frozen HTML in Browser» / «showInWeb» or «Copy Frozen HTML Web URL» / «copyWebUrl»
+        - Used for commands «Open Frozen HTML in Browser» (`showInWeb`) and «Copy Frozen HTML Web URL» (`copyWebUrl`).
         - Supports `${relativeFileDirname}`, `${fileBasenameNoExtension}`, and `${fileBasename}`.
-            - like `https://your.server.com/prefix/${relativeFileDirname}/${fileBasenameNoExtension}.html`
+        - Example: `https://your.server.com/prefix/${relativeFileDirname}/${fileBasenameNoExtension}.html`
+- `editUrlTemplate`
+    - Template for the Edit URL embedded inside the generated HTML document.
+        - If configured, a subtle edit button (✎) will be injected into the top-right corner of the HTML page, allowing you to jump back into your editor with a single click or by pressing `Alt+Shift+E`. The button is automatically hidden when printing the document.
+        - Supports `${relativeFileDirname}`, `${fileBasenameNoExtension}`, `${fileBasename}`, and `${absolutePath}`.
+        - Example for local VS Code: `vscode://file/${absolutePath}`
+        - Example for remote code-server: `https://your-code-server.com/?folder=/workspace/${relativeFileDirname}&file=${absolutePath}`

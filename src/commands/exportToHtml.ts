@@ -185,8 +185,8 @@ async function generateFullHtml(context: vscode.ExtensionContext, renderOutput: 
     }
     
     // Inject the title and the debug info
-    templateHtml = templateHtml.replace('<!-- TITLE_PLACEHOLDER -->', title.trim());
-    templateHtml = templateHtml.replace('<!-- BODY_PLACEHOLDER -->', bodyContent + '\n' + titleDebugInfo);
+    templateHtml = templateHtml.replace('{{TITLE_PLACEHOLDER}}', title.trim());
+    templateHtml = templateHtml.replace('{{BODY_PLACEHOLDER}}', bodyContent + '\n' + titleDebugInfo);
     // --- END: Improved Title Logic with Debugging ---
 
     const { styles: defaultStyles, variables: styleVarsFromConfig } = await getDefaultStylesFromConfig(context, documentUri);
@@ -203,10 +203,57 @@ async function generateFullHtml(context: vscode.ExtensionContext, renderOutput: 
         styleVariables = `--vscode-editor-font-family: ${editorConfig.get('fontFamily', 'sans-serif')};`;
     }
 
-    templateHtml = templateHtml.replace('<!-- DEFAULT_STYLES_PLACEHOLDER -->', defaultStyles);
-    templateHtml = templateHtml.replace('<!-- USER_STYLES_PLACEHOLDER -->', contributedStyleLinks + userStyleLinks + scripts + contributedScriptTags);
-    templateHtml = templateHtml.replace('<!-- BODY_CLASS -->', bodyClass);
-    templateHtml = templateHtml.replace('<!-- STYLE_VARIABLES -->', styleVariables);
+    const config = vscode.workspace.getConfiguration('freeze-markdown', documentUri);
+    const editUrlTemplate = config.get<string>('editUrlTemplate', '');
+    const editUrl = resolveUrlTemplate(documentUri, editUrlTemplate);
+
+    let editInjection = '';
+    if (editUrl) {
+        // Добавляем максимально незаметную кнопку (символ карандаша ✎)
+        // И скрипт, который слушает Alt+Shift+E (используем e.code === 'KeyE' для независимости от раскладки клавиатуры)
+        editInjection = `
+  <a href="${editUrl}" title="Edit Document (Alt+Shift+E)" class="freeze-markdown-edit-btn">✎</a>
+  <style>
+    .freeze-markdown-edit-btn {
+      position: fixed;
+      top: 15px;
+      right: 15px;
+      text-decoration: none !important;
+      color: var(--vscode-descriptionForeground, rgba(128, 128, 128, 0.4));
+      font-size: 20px;
+      opacity: 0.2;
+      transition: opacity 0.2s, color 0.2s;
+      z-index: 999999;
+      background: transparent;
+      border: none;
+      line-height: 1;
+    }
+    .freeze-markdown-edit-btn:hover {
+      opacity: 1;
+      color: var(--vscode-textLink-foreground, #007acc);
+    }
+    @media print {
+      .freeze-markdown-edit-btn { display: none !important; }
+    }
+  </style>
+  <script>
+    document.addEventListener('keydown', function(e) {
+      // Проверяем Alt + Shift + E (e.code 'KeyE' работает даже если включена русская раскладка)
+      if (e.altKey && e.shiftKey && (e.code === 'KeyE' || e.key.toLowerCase() === 'e')) {
+        e.preventDefault();
+        window.location.href = "${editUrl}";
+      }
+    });
+  </script>`;
+    }
+
+
+
+    templateHtml = templateHtml.replace('{{DEFAULT_STYLES_PLACEHOLDER}}', defaultStyles);
+    templateHtml = templateHtml.replace('{{USER_STYLES_PLACEHOLDER}}', contributedStyleLinks + userStyleLinks + scripts + contributedScriptTags);
+    templateHtml = templateHtml.replace('{{BODY_CLASS}}', bodyClass);
+    templateHtml = templateHtml.replace('{{STYLE_VARIABLES}}', styleVariables);
+    templateHtml = templateHtml.replace('{{EDIT_INJECTION_PLACEHOLDER}}', editInjection);
     
     return templateHtml;
 }
@@ -336,6 +383,37 @@ async function embedResources(html: string, sourceUri: vscode.Uri, embedWeb: boo
 
     await Promise.all(promises);
     return $.html();
+}
+
+export function resolveUrlTemplate(documentUri: vscode.Uri, template: string): string | undefined {
+    if (!template || template.trim() === '') {
+        return undefined;
+    }
+
+    const workspaceFolder = vscode.workspace.getWorkspaceFolder(documentUri);
+    let relativeFileDirname = '';
+
+    if (workspaceFolder) {
+        const relativePath = path.relative(workspaceFolder.uri.fsPath, documentUri.fsPath);
+        const relativeDir = path.dirname(relativePath);
+        relativeFileDirname = relativeDir === '.' ? '' : relativeDir.replace(/\\/g, '/');
+    }
+
+    const parsedPath = path.parse(documentUri.fsPath);
+    const fileBasenameNoExtension = parsedPath.name;
+    const fileBasename = parsedPath.base;
+    const absolutePath = documentUri.fsPath.replace(/\\/g, '/'); // Прямые слеши надежнее для URL
+
+    let url = template
+        .replace(/\$\{relativeFileDirname\}/g, relativeFileDirname)
+        .replace(/\$\{fileBasenameNoExtension\}/g, fileBasenameNoExtension)
+        .replace(/\$\{fileBasename\}/g, fileBasename)
+        .replace(/\$\{absolutePath\}/g, absolutePath);
+
+    // Защита от двойных слешей (исключая протоколы типа http:// или vscode://)
+    url = url.replace(/([^:])\/{2,}/g, '$1/');
+
+    return url;
 }
 
 async function resolveAndEmbedScript(src: string, scriptElement: Cheerio<Element>, documentUri: vscode.Uri, embedLocal: boolean) {

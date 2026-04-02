@@ -97,7 +97,12 @@
                     "type": "string",
                     "default": "https://your.server.com/prefix/${relativeFileDirname}/${fileBasenameNoExtension}.html",
                     "description": "Template for the web URL of the generated HTML. Supports ${relativeFileDirname}, ${fileBasenameNoExtension}, and ${fileBasename}."
-                }
+                },
+                "freeze-markdown.editUrlTemplate": {
+                    "type": "string",
+                    "default": "",
+                    "description": "Template for the Edit URL embedded in the generated HTML. Supports ${relativeFileDirname}, ${fileBasenameNoExtension}, ${fileBasename}, and ${absolutePath}. Example for local VS Code: vscode://file/${absolutePath}"
+                }                
             }
         }
     },
