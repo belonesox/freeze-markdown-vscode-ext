@@ -10,3 +10,5 @@ gold.html
 chats.md
 .aider*
 *.html
+.cache
+.vscode/freeze-markdown-styles.json
