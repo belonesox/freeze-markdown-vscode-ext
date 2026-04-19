@@ -1,5 +1,10 @@
 # Change Log
 
+## 0.1.9
+- Added setting `rewriteLocalMdLinks`
+    - Enabled by default (`true`).
+    - When exporting to HTML, any relative links pointing to other `.md` files will be automatically rewritten to point to their corresponding generated files (using `outputSuffix`). For example, `[link](docs/api.md#section)` becomes `<a href="docs/api.html#section">link</a>`.
+
 ## 0.1.6
 - Added setting `editUrlTemplate`
     - You may need to recreate/merge `freeze-markdown-template.html` for your existing projects

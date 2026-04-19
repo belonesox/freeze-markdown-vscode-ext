@@ -14,7 +14,8 @@ export function activate(context: vscode.ExtensionContext) {
                 showDialog: false,
                 showNotifications: true,
                 embedWebResources: config.get('embedWebResourcesOnManualExport', true),
-                embedLocalResources: config.get('embedLocalResourcesOnManualExport', true)
+                embedLocalResources: config.get('embedLocalResourcesOnManualExport', true),
+                rewriteLocalMdLinks: config.get('rewriteLocalMdLinks', true)
             });
         } else {
             vscode.window.showWarningMessage('Please open a Markdown file to export.');
@@ -29,7 +30,8 @@ export function activate(context: vscode.ExtensionContext) {
                 showDialog: true,
                 showNotifications: true,
                 embedWebResources: config.get('embedWebResourcesOnManualExport', true),
-                embedLocalResources: config.get('embedLocalResourcesOnManualExport', true)
+                embedLocalResources: config.get('embedLocalResourcesOnManualExport', true),
+                rewriteLocalMdLinks: config.get('rewriteLocalMdLinks', true)
             });
         } else {
             vscode.window.showWarningMessage('Please open a Markdown file to export.');
@@ -43,7 +45,8 @@ export function activate(context: vscode.ExtensionContext) {
                 showDialog: false,
                 showNotifications: false,
                 embedWebResources: config.get('embedWebResourcesOnAutoSave', false),
-                embedLocalResources: config.get('embedLocalResourcesOnAutoSave', true)
+                embedLocalResources: config.get('embedLocalResourcesOnAutoSave', true),
+                rewriteLocalMdLinks: config.get('rewriteLocalMdLinks', true)
             });
         }
     });
