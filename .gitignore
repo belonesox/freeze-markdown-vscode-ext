@@ -11,4 +11,10 @@ chats.md
 .aider*
 *.html
 .cache
+.o*at
+*.orig
+*.rej
+*.patch
+p.txt
+p_1.txt
 .vscode/freeze-markdown-styles.json
