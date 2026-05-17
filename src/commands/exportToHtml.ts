@@ -360,16 +360,16 @@ async function generateFullHtml(
   }
 
   return templateHtml
-    .replace("{{TITLE_PLACEHOLDER}}", title.trim())
-    .replace("{{STYLE_VARIABLES}}", styleVariables)
-    .replace("{{DEFAULT_STYLES_PLACEHOLDER}}", defaultStyles)
+    .replace("{{TITLE_PLACEHOLDER}}", () => title.trim())
+    .replace("{{STYLE_VARIABLES}}", () => styleVariables)
+    .replace("{{DEFAULT_STYLES_PLACEHOLDER}}", () => defaultStyles)
     .replace(
       "{{USER_STYLES_PLACEHOLDER}}",
-      contributedStyleLinks + userStyleLinks + scripts + contributedScriptTags
+      () => contributedStyleLinks + userStyleLinks + scripts + contributedScriptTags
     )
-    .replace("{{BODY_CLASS}}", bodyClass)
-    .replace("{{BODY_PLACEHOLDER}}", bodyContent + "\n" + titleDebugInfo)
-    .replace("{{EDIT_INJECTION_PLACEHOLDER}}", editInjection);
+    .replace("{{BODY_CLASS}}", () => bodyClass)
+    .replace("{{BODY_PLACEHOLDER}}", () => bodyContent + "\n" + titleDebugInfo)
+    .replace("{{EDIT_INJECTION_PLACEHOLDER}}", () => editInjection);
 }
 
 async function getDefaultStylesFromConfig(
