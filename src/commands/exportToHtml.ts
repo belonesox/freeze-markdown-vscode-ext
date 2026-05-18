@@ -213,7 +213,7 @@ async function getTemplate(
  * @param documentUri The URI of the source Markdown document.
  * @returns A promise that resolves to the complete HTML string, ready for resource embedding.
  */
-async function generateFullHtml(
+export async function generateFullHtml(
   context: vscode.ExtensionContext,
   renderOutput: string,
   documentUri: vscode.Uri
@@ -508,7 +508,7 @@ async function cacheFile(
 }
 // === END HELPER ===
 
-async function embedResources(
+export async function embedResources(
   html: string,
   sourceUri: vscode.Uri,
   embedWeb: boolean,

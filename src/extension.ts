@@ -2,9 +2,27 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 import { renderAndSave } from './commands/exportToHtml';
 import { updateDefaultStyles } from './commands/updateThemeStyles';
+import { renderNotebookAndSave } from './commands/exportNotebookToHtml';
 
 export function activate(context: vscode.ExtensionContext) {
     console.log('[Freeze Markdown] Extension activated.');
+
+    const exportNotebookCommand = vscode.commands.registerCommand('freeze-markdown.exportNotebookToHtml', async () => {
+        const activeNotebookEditor = vscode.window.activeNotebookEditor;
+        if (activeNotebookEditor) {
+            const notebook = activeNotebookEditor.notebook;
+            const config = vscode.workspace.getConfiguration('freeze-markdown', notebook.uri);
+            await renderNotebookAndSave(context, notebook, {
+                showDialog: false,
+                showNotifications: true,
+                embedWebResources: config.get('embedWebResourcesOnManualExport', true),
+                embedLocalResources: config.get('embedLocalResourcesOnManualExport', true),
+                rewriteLocalMdLinks: config.get('rewriteLocalMdLinks', true)
+            });
+        } else {
+            vscode.window.showWarningMessage('Please open a Jupyter Notebook (.ipynb) to export.');
+        }
+    });
 
     const exportCommand = vscode.commands.registerCommand('freeze-markdown.exportToHtml', async () => {
         const editor = vscode.window.activeTextEditor;
@@ -121,7 +139,7 @@ export function activate(context: vscode.ExtensionContext) {
         }
     });
 
-    context.subscriptions.push(exportCommand, exportWithDialogCommand, saveListener, updateStylesCommand, showInWebCommand, copyWebUrlCommand);
+    context.subscriptions.push(exportNotebookCommand, exportCommand, exportWithDialogCommand, saveListener, updateStylesCommand, showInWebCommand, copyWebUrlCommand);
 }
 
 export function deactivate() {}

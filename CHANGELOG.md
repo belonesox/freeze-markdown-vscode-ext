@@ -1,5 +1,11 @@
 # Change Log
 
+## 0.1.10
+- "Export Notebook to HTML" / `exportNotebookToHtml`    
+    - Export current Jupyter Notebook to HTML
+        - may be we need to merge-join somehow to "Freeze to HTML" for both `MD` and `ipynb`?
+
+
 ## 0.1.9
 - Added setting `rewriteLocalMdLinks`
     - Enabled by default (`true`).

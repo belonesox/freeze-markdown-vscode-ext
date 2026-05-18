@@ -24,10 +24,15 @@
         "onCommand:freeze-markdown.showInWeb",
         "onCommand:freeze-markdown.copyWebUrl",
         "onCommand:freeze-markdown.updateThemeStyles",
-        "onLanguage:markdown"
+        "onLanguage:markdown",
+        "onLanguage:jupyter"
     ],
     "contributes": {
         "commands": [
+            {
+                "command": "freeze-markdown.exportNotebookToHtml",
+                "title": "Export Notebook to HTML"
+            },
             {
                 "command": "freeze-markdown.exportToHtml",
                 "title": "Export Markdown to Self-Contained HTML"

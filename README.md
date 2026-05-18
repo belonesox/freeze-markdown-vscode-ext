@@ -22,6 +22,13 @@ There are many documentation processes out there, but one of the simplest and mo
 - It seemed like a tiny missing piece — just taking what is already visible in the Web preview and turning it into a "standalone" HTML file.
     - Surprisingly, this turned out to be wildly difficult (although I expected a couple of "save to file" calls). Because of various security constraints, the web-view is heavily isolated from extension code, and you can't just easily pull HTML out of there. I had to take a somewhat roundabout way, but it more or less worked out.
 
+- Similar issue with the "browser-readable" representation of Jupyter notebooks
+    - yes, there are plenty of "conversion" utilities for ipynb to PDF/HTML
+        - but they are all ugly and buggy
+        - they don't look the same as in VS Code
+            - especially when customizing cell styles, etc.
+    - for this, we're adding a command for similar ipynb-to-HTML export.
+
 ----
 
 ### Installation
@@ -33,6 +40,9 @@ There are many documentation processes out there, but one of the simplest and mo
     - Generates a preview into an `.html` file (or another extension) from your `.md` file.
 - "Export Markdown to HTML (Show Save Dialog)" / `exportToHtmlWithDialog`
     - Same as above, but opens a dialog so you can choose the file name.
+- "Export Notebook to HTML" / `exportNotebookToHtml`    
+    - Export current Jupyter Notebook to HTML
+        - may be we need to merge-join somehow to "Freeze to HTML" for both `MD` and `ipynb`?
 - "Update Markdown Preview Theme Styles" / `updateThemeStyles`
     - A technical command that you will likely never need.
         - It updates the built-in HTML-preview styles in `.vscode/freeze-markdown-styles.json`.
