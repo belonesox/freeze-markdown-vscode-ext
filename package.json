@@ -52,6 +52,10 @@
             {
                 "command": "freeze-markdown.updateThemeStyles",
                 "title": "Update Markdown Preview Theme Styles"
+            },
+            {
+                "command": "freeze-markdown.exportWorkspace",
+                "title": "Export All Markdown and Notebooks in Workspace"
             }
         ],
         "configuration": {

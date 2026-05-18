@@ -73,6 +73,40 @@ export function activate(context: vscode.ExtensionContext) {
         await updateDefaultStyles(context);
     });
 
+    const exportWorkspaceCommand = vscode.commands.registerCommand('freeze-markdown.exportWorkspace', async () => {
+        const config = vscode.workspace.getConfiguration('freeze-markdown');
+        const options = {
+            showDialog: false,
+            showNotifications: false,
+            embedWebResources: config.get<boolean>('embedWebResourcesOnManualExport', true),
+            embedLocalResources: config.get<boolean>('embedLocalResourcesOnManualExport', true),
+            rewriteLocalMdLinks: config.get<boolean>('rewriteLocalMdLinks', true)
+        };
+
+        const mdFiles = await vscode.workspace.findFiles('**/*.md', '{**/node_modules/**,**/.vscode/**}');
+        console.log(`[Freeze Markdown] Found ${mdFiles.length} Markdown files.`);
+        for (const uri of mdFiles) {
+            try {
+                const doc = await vscode.workspace.openTextDocument(uri);
+                await renderAndSave(context, doc, options);
+            } catch (e: any) {
+                console.error(`[Freeze Markdown] Failed to export MD: ${uri.fsPath}`, e);
+            }
+        }
+
+        const ipynbFiles = await vscode.workspace.findFiles('**/*.ipynb', '{**/node_modules/**,**/.vscode/**}');
+        console.log(`[Freeze Markdown] Found ${ipynbFiles.length} Jupyter Notebooks.`);
+        for (const uri of ipynbFiles) {
+            try {
+                const doc = await vscode.workspace.openNotebookDocument(uri);
+                await renderNotebookAndSave(context, doc, options);
+            } catch (e: any) {
+                console.error(`[Freeze Markdown] Failed to export Notebook: ${uri.fsPath}`, e);
+            }
+        }
+
+        vscode.window.showInformationMessage(`Exported ${mdFiles.length} MDs and ${ipynbFiles.length} Notebooks!`);
+    });
 
     // Вспомогательная функция для вычисления URL
     function generateWebUrl(documentUri: vscode.Uri): string | undefined {
@@ -139,7 +173,7 @@ export function activate(context: vscode.ExtensionContext) {
         }
     });
 
-    context.subscriptions.push(exportNotebookCommand, exportCommand, exportWithDialogCommand, saveListener, updateStylesCommand, showInWebCommand, copyWebUrlCommand);
+    context.subscriptions.push(exportNotebookCommand, exportCommand, exportWithDialogCommand, saveListener, updateStylesCommand, showInWebCommand, copyWebUrlCommand, exportWorkspaceCommand);
 }
 
 export function deactivate() {}
