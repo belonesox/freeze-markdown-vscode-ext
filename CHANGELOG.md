@@ -1,5 +1,9 @@
 # Change Log
 
+## 0.1.11
+- Add `baseUrl` option
+  - for simplifiing export configuration
+
 ## 0.1.10
 - "Export Notebook to HTML" / `exportNotebookToHtml`    
     - Export current Jupyter Notebook to HTML

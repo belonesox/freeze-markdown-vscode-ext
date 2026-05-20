@@ -104,6 +104,11 @@ By default, everything is configured reasonably for occasional use: auto-save is
         - `embedWebResourcesOnAutoSave` — Embed External Resources on Auto Save.
         - `embedLocalResourcesOnManualExport` — Embed local resources (CSS/JS/images) directly into the HTML on manual export. If false, resources are cached in `.vscode/.cache` and linked relatively.
         - `embedLocalResourcesOnAutoSave` — Embed local resources directly into the HTML on auto save. If false, resources are cached and linked relatively.
+- `baseUrl`
+    - Base URL of your server
+        - if using on code-server, or content is somehow available in web
+    - Used in templates as `${baseUrl}`
+    - Empty by default
 - `rewriteLocalMdLinks`
     - Enabled by default (`true`).
     - When exporting to HTML, any relative links pointing to other `.md` files will be automatically rewritten to point to their corresponding generated files (using `outputSuffix`). For example, `[link](docs/api.md#section)` becomes `<a href="docs/api.html#section">link</a>`.
@@ -113,11 +118,11 @@ By default, everything is configured reasonably for occasional use: auto-save is
 - `webUrlTemplate`
     - Template for the web URL of the generated HTML.
         - Used for commands "Open Frozen HTML in Browser" (`showInWeb`) and "Copy Frozen HTML Web URL" (`copyWebUrl`).
-        - Supports `${relativeFileDirname}`, `${fileBasenameNoExtension}`, and `${fileBasename}`.
-        - Example: `https://your.server.com/prefix/${relativeFileDirname}/${fileBasenameNoExtension}.html`
+        - Supports `${baseUrl}`, `${relativeFileDirname}`, `${fileBasenameNoExtension}`, and `${fileBasename}`.
+        - Example: `${baseUrl}/prefix/${relativeFileDirname}/${fileBasenameNoExtension}.html`
 - `editUrlTemplate`
     - Template for the Edit URL embedded inside the generated HTML document.
         - If configured, a subtle edit button (✎) will be injected into the top-right corner of the HTML page, allowing you to jump back into your editor with a single click or by pressing `Alt+Shift+E`. The button is automatically hidden when printing the document.
-        - Supports `${relativeFileDirname}`, `${fileBasenameNoExtension}`, `${fileBasename}`, and `${absolutePath}`.
+        - Supports `${baseUrl}, ${relativeFileDirname}`, `${fileBasenameNoExtension}`, `${fileBasename}`, and `${absolutePath}`.
         - Example for local VS Code: `vscode://file/${absolutePath}`
-        - Example for remote code-server: `https://your-code-server.com/?folder=/workspace/${relativeFileDirname}&file=${absolutePath}`
+        - Example for remote code-server: `https://${baseUrl}/?folder=/workspace/${relativeFileDirname}&file=${absolutePath}`

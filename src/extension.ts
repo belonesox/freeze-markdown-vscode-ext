@@ -111,6 +111,7 @@ export function activate(context: vscode.ExtensionContext) {
     // Вспомогательная функция для вычисления URL
     function generateWebUrl(documentUri: vscode.Uri): string | undefined {
         const config = vscode.workspace.getConfiguration('freeze-markdown', documentUri);
+        const baseUrl = config.get<string>('baseUrl', '');
         const template = config.get<string>('webUrlTemplate');
 
         if (!template || template.trim() === '') {
@@ -130,11 +131,14 @@ export function activate(context: vscode.ExtensionContext) {
 
         // Нормализуем слеши для URL (заменяем виндовые \ на /)
         const relativeFileDirname = relativeDir === '.' ? '' : relativeDir.replace(/\\/g, '/');
+        const workspaceFolderPath = workspaceFolder.uri.fsPath.replace(/\\/g, '/');
         const fileBasenameNoExtension = parsedPath.name;
         const fileBasename = parsedPath.base;
 
         // Подставляем переменные
         let url = template
+            .replace(/\$\{baseUrl\}/g, baseUrl)
+            .replace(/\$\{workspaceFolder\}/g, workspaceFolderPath)
             .replace(/\$\{relativeFileDirname\}/g, relativeFileDirname)
             .replace(/\$\{fileBasenameNoExtension\}/g, fileBasenameNoExtension)
             .replace(/\$\{fileBasename\}/g, fileBasename);
@@ -146,30 +150,42 @@ export function activate(context: vscode.ExtensionContext) {
         return url;
     }
 
+    function getActiveDocumentUri(): vscode.Uri | undefined {
+        const textEditor = vscode.window.activeTextEditor;
+        if (textEditor?.document.languageId === 'markdown') {
+            return textEditor.document.uri;
+        }
+        const notebookEditor = vscode.window.activeNotebookEditor;
+        if (notebookEditor) {
+            return notebookEditor.notebook.uri;
+        }
+        return undefined;
+    }
+
     const showInWebCommand = vscode.commands.registerCommand('freeze-markdown.showInWeb', async () => {
-        const editor = vscode.window.activeTextEditor;
-        if (editor?.document.languageId === 'markdown') {
-            const url = generateWebUrl(editor.document.uri);
+        const documentUri = getActiveDocumentUri();
+        if (documentUri) {
+            const url = generateWebUrl(documentUri);
             if (url) {
                 // Открывает URL в браузере по умолчанию
                 vscode.env.openExternal(vscode.Uri.parse(url));
             }
         } else {
-            vscode.window.showWarningMessage('Please open a Markdown file to get its Web URL.');
+            vscode.window.showWarningMessage('Please open a Markdown file or Jupyter Notebook to get its Web URL.');
         }
     });
 
     const copyWebUrlCommand = vscode.commands.registerCommand('freeze-markdown.copyWebUrl', async () => {
-        const editor = vscode.window.activeTextEditor;
-        if (editor?.document.languageId === 'markdown') {
-            const url = generateWebUrl(editor.document.uri);
+        const documentUri = getActiveDocumentUri();
+        if (documentUri) {
+            const url = generateWebUrl(documentUri);
             if (url) {
                 // Копирует текст в буфер обмена
                 await vscode.env.clipboard.writeText(url);
                 vscode.window.showInformationMessage(`Web URL copied: ${url}`);
             }
         } else {
-            vscode.window.showWarningMessage('Please open a Markdown file to get its Web URL.');
+            vscode.window.showWarningMessage('Please open a Markdown file or Jupyter Notebook to get its Web URL.');
         }
     });
 

@@ -39,7 +39,11 @@ export function resolveUrlTemplate(
   const fileBasename = parsedPath.base;
   const absolutePath = documentUri.fsPath.replace(/\\/g, "/");
 
+  const config = vscode.workspace.getConfiguration("freeze-markdown", documentUri);
+  const baseUrl = config.get<string>("baseUrl", "");
+
   let url = template
+    .replace(/\$\{baseUrl\}/g, baseUrl)
     .replace(/\$\{relativeFileDirname\}/g, relativeFileDirname)
     .replace(/\$\{fileBasenameNoExtension\}/g, fileBasenameNoExtension)
     .replace(/\$\{fileBasename\}/g, fileBasename)
