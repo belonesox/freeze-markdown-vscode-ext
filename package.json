@@ -118,8 +118,8 @@
                 },
                 "freeze-markdown.editUrlTemplate": {
                     "type": "string",
-                    "default": "",
-                    "description": "Template for the Edit URL embedded in the generated HTML. Supports ${relativeFileDirname}, ${fileBasenameNoExtension}, ${fileBasename}, and ${absolutePath}. Example for local VS Code: vscode://file/${absolutePath}"
+                    "default": "https://${baseUrl}/code?file=${absolutePath}",
+                    "description": "Template for the Edit URL embedded in the generated HTML. Supports ${baseUrl}, ${relativeFileDirname}, ${fileBasenameNoExtension}, ${fileBasename}, and ${absolutePath}. Example for local VS Code: vscode://file/${absolutePath}"
                 }
             }
         }
