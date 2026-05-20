@@ -3,7 +3,7 @@
     "displayName": "Freeze Markdown to HTML",
     "icon": "media/icon.png",
     "description": "Saves a Markdown Preview as a single, self-contained HTML file.",
-    "version": "0.1.11",
+    "version": "0.1.12",
     "license": "MIT",
     "author": "belonesox",
     "publisher": "belonesox",
@@ -106,15 +106,15 @@
                     "default": false,
                     "description": "Creates an additional `.debug.html` file before embedding resources. Useful for debugging style issues."
                 },
-            "freeze-markdown.baseUrl": {
-                "type": "string",
-                "default": "",
-                "description": "Base URL of your server. Used in templates as ${baseUrl}."
-            },
+                "freeze-markdown.baseUrl": {
+                    "type": "string",
+                    "default": "",
+                    "description": "Base URL of your server. Used in templates as ${baseUrl}."
+                },
                 "freeze-markdown.webUrlTemplate": {
                     "type": "string",
-                "default": "${baseUrl}/prefix/${relativeFileDirname}/${fileBasenameNoExtension}.html",
-                "description": "Template for the web URL of the generated HTML. Supports ${baseUrl}, ${relativeFileDirname}, ${fileBasenameNoExtension}, and ${fileBasename}."
+                    "default": "${baseUrl}/prefix/${relativeFileDirname}/${fileBasenameNoExtension}.html",
+                    "description": "Template for the web URL of the generated HTML. Supports ${baseUrl}, ${relativeFileDirname}, ${fileBasenameNoExtension}, and ${fileBasename}."
                 },
                 "freeze-markdown.editUrlTemplate": {
                     "type": "string",
